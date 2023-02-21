@@ -1,0 +1,31 @@
+{
+  "name": "trippyz-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rohananilkumar/trippyz-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rohananilkumar/trippyz-backend/issues"
+  },
+  "homepage": "https://github.com/rohananilkumar/trippyz-backend#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "config": "^3.3.9",
+    "express": "^4.18.2",
+    "helmet": "^6.0.1",
+    "joi": "^17.8.3",
+    "jsonwebtoken": "^9.0.0",
+    "loadash": "^1.0.0",
+    "mongoose": "^6.9.2",
+    "nodemon": "^2.0.20"
+  }
+}
