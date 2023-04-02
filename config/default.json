@@ -1,4 +1,5 @@
 {
   "jwtPrivateKey": "trippyz_PrivateKey",
-  "db": "mongodb+srv://trippyztkmce:ZZ7VgLqInRnhb0GN@cluster0.kx47ajn.mongodb.net/?retryWrites=true&w=majority"
+  "db": "mongodb+srv://trippyztkmce:ZZ7VgLqInRnhb0GN@cluster0.kx47ajn.mongodb.net/?retryWrites=true&w=majority",
+  "gmap": "AIzaSyDJAJHPrnnTEADpRrH44q19tXlOzoxWjgA"
 }
