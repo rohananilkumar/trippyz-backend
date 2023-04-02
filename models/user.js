@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Joi = require("Joi");
+const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const config = require("config");
 
@@ -40,5 +40,8 @@ userMongooseSchema.methods.generateAuthToken = function () {
   return token;
 };
 
+User = mongoose.model("User", userMongooseSchema);
+
 exports.userJoiSchema = userJoiSchema;
 exports.userMongooseSchema = userMongooseSchema;
+exports.User = User;

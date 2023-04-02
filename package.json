@@ -25,6 +25,7 @@
     "joi": "^17.8.3",
     "jsonwebtoken": "^9.0.0",
     "loadash": "^1.0.0",
+    "moment": "^2.29.4",
     "mongoose": "^6.9.2",
     "nodemon": "^2.0.20"
   }
