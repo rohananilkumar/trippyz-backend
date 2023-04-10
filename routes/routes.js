@@ -19,7 +19,9 @@ const {
   getRestaurantDetails,
   getTouristPlaces,
   getCoordinates,
+  getPlaceDetails,
 } = require("../utils/gmap");
+const { googleMapsClient } = require("../startup/gmap");
 
 router.post(
   "/get-route",
@@ -65,13 +67,7 @@ router.get("/restaurants/:area", [auth], async (req, res) => {
 
   const restaurants = await getRestaurants(area, 5000);
 
-  const restaurantIds = restaurants.results.map((x) => x.place_id);
-
-  const restaurantDetails = await getRestaurantDetails(restaurantIds[0]);
-
-  return res.status(200).send({
-    restaurantDetails,
-  });
+  return res.status(200).send(restaurants);
 });
 
 router.get("/hotels/:area", [auth], async (req, res) => {
@@ -79,14 +75,15 @@ router.get("/hotels/:area", [auth], async (req, res) => {
 
   const hotels = await getHotels(area, 5000);
 
-  const hotelIds = hotels.results.map((x) => x.place_id);
-
-  const details = await getHotelDetails(hotelIds[0]);
-
-  return res.status(200).send({
-    // hotels,
-    details,
-  });
+  return res.status(200).send(hotels);
 });
+
+router.get("/place-details/:placeId", auth, async (req, res) => {
+  const placeId = req.params.placeId;
+  const details = await getPlaceDetails(placeId);
+  return res.status(200).send(details);
+});
+
+router.get("/", auth, async (req, res) => {});
 
 module.exports = router;
