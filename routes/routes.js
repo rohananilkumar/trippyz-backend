@@ -10,66 +10,82 @@ const {
 } = require("../models/routerequest");
 const config = require("config");
 const fetch = require("node-fetch");
+const { Coordinates } = require("../models/coordinates");
+const coordinates = require("../middlewares/coordinates");
+const {
+  getHotels,
+  getHotelDetails,
+  getRestaurants,
+  getRestaurantDetails,
+  getTouristPlaces,
+  getCoordinates,
+} = require("../utils/gmap");
 
-router.get("/", async (req, res) => {
-  console.log("get request");
+router.post(
+  "/get-route",
+  [auth, coordinates("start"), coordinates("dest")],
+  async (req, res) => {
+    const { error, value } = routeRequestJoiSchema.validate(req.body);
+    if (error) return res.status(400).send(error);
+    console.log(req.coordinates.start);
+    console.log(req.coordinates.dest);
 
-  return res.status(200).send({
-    message: "this works",
-  });
-});
+    const route = new RouteRequest({
+      ...value,
+      user: req.user._id,
+      destCoordinates: new Coordinates(req.coordinates.dest),
+      startCoordinates: new Coordinates(req.coordinates.start),
+    });
+    const result = await route.save();
 
-router.post("/get-route", auth, async (req, res) => {
-  const { error, value } = routeRequestJoiSchema.validate(req.body);
-  if (error) return res.status(400).send(error);
+    return res.status(200).send({ message: "success", value: result });
+  }
+);
 
-  const route = new RouteRequest({ ...value, user: req.user._id });
-  const result = await route.save();
-
-  return res.status(200).send({ message: "success", value: result });
-});
-
-router.get("/lat-long/:area", auth, async (req, res) => {
+router.get("/coordinates/:area", auth, async (req, res) => {
   const area = req.params.area;
 
-  const key = config.get("gmap");
-  console.log(area, key);
+  const coordinates = await getCoordinates(area);
 
-  const response = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${area}&key=${key}`
-  );
-
-  const body = await response.json();
-
-  // const coordinates = body.feature;s[0].geometry
-
-  return res.status(200).send(body.results[0].geometry);
+  return res.status(200).send({ coordinates });
 });
 
 router.get("/tourist-places/:area", auth, async (req, res) => {
   const area = req.params.area;
 
-  const key = config.get("gmap");
-
-  const coordinateResponse = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${area}&key=${key}`
-  );
-
-  const coordinatesBody = await coordinateResponse.json();
-
-  const coordinates = coordinatesBody.results[0].geometry.location;
-  console.log(coordinates);
-  const radius = 3000;
-
-  //https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={latitude},{longitude}&radius={radius}&type={type}&key={API_KEY}
-  const type = "tourist_attraction";
-  const requeststring = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${coordinates.lat},${coordinates.lng}&radius=${radius}&type=${type}&key=${key}`;
-  const tourismResponse = await fetch(requeststring);
-  const touristPlaces = await tourismResponse.json();
+  const touristPlaces = await getTouristPlaces(area, 5000);
 
   return res.status(200).send({
-    coordinates,
     touristPlaces,
+  });
+});
+
+router.get("/restaurants/:area", [auth], async (req, res) => {
+  const area = req.params.area;
+
+  const restaurants = await getRestaurants(area, 5000);
+
+  const restaurantIds = restaurants.results.map((x) => x.place_id);
+
+  const restaurantDetails = await getRestaurantDetails(restaurantIds[0]);
+
+  return res.status(200).send({
+    restaurantDetails,
+  });
+});
+
+router.get("/hotels/:area", [auth], async (req, res) => {
+  const area = req.params.area;
+
+  const hotels = await getHotels(area, 5000);
+
+  const hotelIds = hotels.results.map((x) => x.place_id);
+
+  const details = await getHotelDetails(hotelIds[0]);
+
+  return res.status(200).send({
+    // hotels,
+    details,
   });
 });
 

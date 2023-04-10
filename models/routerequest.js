@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const config = require("config");
+const { coordinatesMongooseSchema } = require("./coordinates");
 
 const routeRequestJoiSchema = Joi.object({
   dest: Joi.required(),
@@ -24,8 +25,16 @@ const routeRequestMongooseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  destCoordinates: {
+    type: coordinatesMongooseSchema,
+    required: true,
+  },
   start: {
     type: String,
+    required: true,
+  },
+  startCoordinates: {
+    type: coordinatesMongooseSchema,
     required: true,
   },
   startTime: {
