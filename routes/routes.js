@@ -14,11 +14,10 @@ const { Coordinates } = require("../models/coordinates");
 const coordinates = require("../middlewares/coordinates");
 const {
   getHotels,
-  getHotelDetails,
   getRestaurants,
-  getRestaurantDetails,
   getTouristPlaces,
   getCoordinates,
+  getPlaceDetailsFromPlaceId,
   getPlaceDetails,
 } = require("../utils/gmap");
 const { googleMapsClient } = require("../startup/gmap");
@@ -54,12 +53,8 @@ router.get("/coordinates/:area", auth, async (req, res) => {
 
 router.get("/tourist-places/:area", auth, async (req, res) => {
   const area = req.params.area;
-
   const touristPlaces = await getTouristPlaces(area, 5000);
-
-  return res.status(200).send({
-    touristPlaces,
-  });
+  return res.status(200).send(touristPlaces);
 });
 
 router.get("/restaurants/:area", [auth], async (req, res) => {
@@ -78,9 +73,15 @@ router.get("/hotels/:area", [auth], async (req, res) => {
   return res.status(200).send(hotels);
 });
 
-router.get("/place-details/:placeId", auth, async (req, res) => {
+router.get("/place-details-from-id/:placeId", auth, async (req, res) => {
   const placeId = req.params.placeId;
-  const details = await getPlaceDetails(placeId);
+  const details = await getPlaceDetailsFromPlaceId(placeId);
+  return res.status(200).send(details);
+});
+
+router.get("/place-details/:place", auth, async (req, res) => {
+  const place = req.params.place;
+  const details = await getPlaceDetails(place);
   return res.status(200).send(details);
 });
 

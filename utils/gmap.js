@@ -17,16 +17,13 @@ async function getCoordinatesString(area) {
 
 async function getHotels(area, radius) {
   const coordinates = await getCoordinatesString(area);
+  const type = "lodging";
   try {
-    const response = await googleMapsClient
-      .placesNearby({
-        location: coordinates,
-        radius,
-        keyword: "hotel",
-      })
+    const tourismResponse = await googleMapsClient
+      .placesNearby({ location: coordinates, radius, type })
       .asPromise();
 
-    return response.json;
+    return tourismResponse.json;
   } catch (e) {
     console.log(e);
   }
@@ -45,7 +42,7 @@ async function getRestaurants(area, radius) {
   }
 }
 
-async function getPlaceDetails(placeId) {
+async function getPlaceDetailsFromPlaceId(placeId) {
   const response = await googleMapsClient
     .place({
       placeid: placeId,
@@ -61,6 +58,11 @@ async function getPlaceDetails(placeId) {
     })
     .asPromise();
 
+  return response.json;
+}
+
+async function getPlaceDetails(place) {
+  const response = await googleMapsClient.places({ query: place }).asPromise();
   return response.json;
 }
 
@@ -83,5 +85,6 @@ module.exports = {
   getHotels,
   getRestaurants,
   getTouristPlaces,
+  getPlaceDetailsFromPlaceId,
   getPlaceDetails,
 };
