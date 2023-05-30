@@ -21,7 +21,6 @@ const getGmapImageFromPoints = async (points) => {
   console.log(polyline);
 
   // Generate the path parameter for the static map
-  const pathParam = `path=enc:${polyline}`;
 
   // Generate the final URL for the static map
   const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?size=1200x00&path=enc:${polyline}&key=${config.get(
