@@ -22,7 +22,7 @@ const {
   getCoordinatesList,
 } = require("../utils/gmap");
 const { googleMapsClient } = require("../startup/gmap");
-const { dijkstra } = require("../utils/algos");
+const { dijkstra, dayRouteRoudTrip } = require("../utils/algos");
 const { getHotelPrice } = require("../utils/scraping");
 const {
   parseDuration,
@@ -49,11 +49,11 @@ router.post(
     });
     // const result = await route.save();
 
-    const places = await getTouristPlaces(value.dest, 5000);
+    const places = await getTouristPlaces(value.dest, 20000);
     const placeNames = places.results.map(
       (place) => place.name + ", " + value.dest
     );
-    const restaurants = await getRestaurants(value.dest, 5000);
+    const restaurants = await getRestaurants(value.dest, 20000);
     const restaurantNames = restaurants.results.map(
       (place) => place.name + ", " + value.dest
     );
@@ -68,25 +68,20 @@ router.post(
     const type = "morning departure";
 
     try {
-      // getNearestPlace(value.start,value.)
-      //const nearest = await getNearestPlace(value.start, placeNames);
-      //console.log(nearest);
-      const route = await dayRoute(value.start, placeNames, restaurantNames);
+      const route = await dayRouteRoudTrip(
+        value.start,
+        placeNames,
+        restaurantNames
+      );
+      res.status(200).send(route);
       const coordinates = await getCoordinatesList(route.map((r) => r.place));
       const pathurl = getGmapImageFromPoints(coordinates);
-      console.log(coordinates);
-      // durationCovered += nearest.duration;
-      // const matrix = await googleMapsClient
-      //   .distanceMatrix({
-      //     origins: placeNames.slice(0, 10),
-      //     destinations: placeNames.slice(0, 10),
-      //   })
-      //   .asPromise();
+      console.log(route);
     } catch (e) {
       console.log(e);
     }
 
-    return res.status(200).send({ message: "success", value: rows });
+    //return res.status(200).send({ message: "success", value: rows });
   }
 );
 
