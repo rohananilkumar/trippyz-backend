@@ -9,7 +9,8 @@ const routeRequestJoiSchema = Joi.object({
   start: Joi.string().required(),
   startTime: Joi.date(),
   endTime: Joi.date(),
-  duration: Joi.string(),
+  duration: Joi.number(),
+  radius: Joi.number().required(),
   budget: Joi.number().required(),
   peopleCount: Joi.number().required().min(1),
   considerations: Joi.array().items(
@@ -33,6 +34,10 @@ const routeRequestMongooseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  radius: {
+    type: Number,
+    required: true,
+  },
   startCoordinates: {
     type: coordinatesMongooseSchema,
     required: true,
@@ -46,8 +51,8 @@ const routeRequestMongooseSchema = new mongoose.Schema({
     required: false,
   },
   duration: {
-    type: String,
-    required: false,
+    type: Number,
+    required: true,
   },
   budget: {
     type: Number,

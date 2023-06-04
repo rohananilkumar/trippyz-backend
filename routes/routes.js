@@ -22,7 +22,11 @@ const {
   getCoordinatesList,
 } = require("../utils/gmap");
 const { googleMapsClient } = require("../startup/gmap");
-const { dijkstra, dayRouteRoudTrip } = require("../utils/algos");
+const {
+  dijkstra,
+  dayRouteRoudTrip,
+  dayRouteReturnTrip,
+} = require("../utils/algos");
 const { getHotelPrice } = require("../utils/scraping");
 const {
   parseDuration,
@@ -48,35 +52,76 @@ router.post(
       startCoordinates: new Coordinates(req.coordinates.start),
     });
     // const result = await route.save();
-
-    const places = await getTouristPlaces(value.dest, 20000);
-    const placeNames = places.results.map(
+    const radius = value.radius * 1000;
+    const places = await getTouristPlaces(value.dest, radius);
+    let placeNames = places.results.map(
       (place) => place.name + ", " + value.dest
     );
-    const restaurants = await getRestaurants(value.dest, 20000);
-    const restaurantNames = restaurants.results.map(
+    const restaurants = await getRestaurants(value.dest, radius);
+    let restaurantNames = restaurants.results.map(
       (place) => place.name + ", " + value.dest
     );
-
+    const hotels = await getHotels(value.dest, radius);
+    let hotelNames = hotels.results.map(
+      (place) => place.name + ", " + value.dest
+    );
+    console.log(hotelNames);
     // console.log(restaurantNames);
 
-    let rows;
-    const graph = {};
-    const durationCovered = 0;
     const duration = parseDuration(value.duration);
     console.log(duration);
-    const type = "morning departure";
+    let numberOfDays = value.duration;
 
     try {
-      const route = await dayRouteRoudTrip(
-        value.start,
-        placeNames,
-        restaurantNames
+      let generatedRoute = [];
+      if (numberOfDays == 1) {
+        let { route, updatedPlaceList, updatedRestaurantList } = await dayRoute(
+          value.start,
+          placeNames,
+          restaurantNames
+        );
+        generatedRoute.forEach((x) => route.push({ ...x, day: 0 }));
+      } else {
+        let finalPoint;
+        while (numberOfDays > 1) {
+          let {
+            route,
+            updatedPlaceList,
+            updatedRestaurantList,
+            updatedHotelList,
+          } = await dayRoute(
+            finalPoint ? finalPoint : value.start,
+            placeNames,
+            restaurantNames,
+            hotelNames
+          );
+          route.forEach((x) =>
+            generatedRoute.push({ ...x, day: value.duration - numberOfDays })
+          );
+          placeNames = updatedPlaceList;
+          restaurantNames = updatedRestaurantList;
+          hotelNames = updatedHotelList;
+          finalPoint = generatedRoute[generatedRoute.length - 1].place;
+          numberOfDays -= 1;
+        }
+        let { route, updatedPlaceList, updatedRestaurantList } =
+          await dayRouteReturnTrip(
+            finalPoint,
+            placeNames,
+            restaurantNames,
+            value.start
+          );
+        route.forEach((x) =>
+          generatedRoute.push({ ...x, day: value.duration - numberOfDays })
+        );
+      }
+
+      const coordinates = await getCoordinatesList(
+        generatedRoute.map((r) => r.place)
       );
-      res.status(200).send(route);
-      const coordinates = await getCoordinatesList(route.map((r) => r.place));
-      const pathurl = getGmapImageFromPoints(coordinates);
-      console.log(route);
+      const pathurl = await getGmapImageFromPoints(coordinates);
+      // console.log(route);
+      return res.status(200).send({ generatedRoute, pathurl });
     } catch (e) {
       console.log(e);
     }
