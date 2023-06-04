@@ -27,7 +27,7 @@
     "jsonwebtoken": "^9.0.0",
     "loadash": "^1.0.0",
     "moment": "^2.29.4",
-    "mongoose": "^6.9.2",
+    "mongoose": "^6.11.1",
     "node-fetch": "^2.6.9",
     "nodemon": "^2.0.20"
   }
