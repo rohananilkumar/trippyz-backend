@@ -15,6 +15,15 @@ async function getCoordinatesString(area) {
   return `${coordinates.lat},${coordinates.lng}`;
 }
 
+async function getCoordinatesList(areas) {
+  const coordinates = [];
+  for (const x of areas) {
+    const coordinate = await getCoordinates(x);
+    coordinates.push(coordinate);
+  }
+  return coordinates;
+}
+
 async function getHotels(area, radius) {
   const coordinates = await getCoordinatesString(area);
   const type = "lodging";
@@ -87,4 +96,5 @@ module.exports = {
   getTouristPlaces,
   getPlaceDetailsFromPlaceId,
   getPlaceDetails,
+  getCoordinatesList,
 };
