@@ -131,13 +131,12 @@ router.post(
       );
       const pathurl = await getGmapImageFromPoints(coordinates);
       // console.log(route);
-      return res
-        .status(200)
-        .send({
-          generatedRoute,
-          staticUrl: pathurl.url,
-          polyLine: pathurl.polyline,
-        });
+      return res.status(200).send({
+        generatedRoute,
+        staticUrl: pathurl.url,
+        polyLine: pathurl.polyline,
+        coordinates: coordinates,
+      });
     } catch (e) {
       console.log(e);
     }

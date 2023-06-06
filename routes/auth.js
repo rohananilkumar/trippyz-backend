@@ -34,6 +34,7 @@ router.post("/login", async (req, res) => {
   const token = user.generateAuthToken();
   res.header("x-auth-token", token).status(200).send({
     message: "logged in successfully",
+    token,
   });
 });
 
@@ -60,7 +61,10 @@ router.post("/register", async (req, res) => {
   res
     .header("x-auth-token", token)
     .status(201)
-    .send(_.pick(user, ["name", "email", "_id"]));
+    .send({
+      ..._.pick(user, ["name", "email", "_id"]),
+      ["x-auth-token"]: token,
+    });
 });
 
 module.exports = router;
