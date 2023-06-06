@@ -13,6 +13,9 @@ const routeRequestJoiSchema = Joi.object({
   radius: Joi.number().required(),
   budget: Joi.number().required(),
   peopleCount: Joi.number().required().min(1),
+  routeType: Joi.string()
+    .required()
+    .valid("lightly-scheduled", "tightly-scheduled", "normal-scheduled"),
   considerations: Joi.array().items(
     Joi.string().valid("food", "stay", "ticket", "petrol")
   ),
@@ -45,6 +48,11 @@ const routeRequestMongooseSchema = new mongoose.Schema({
   startTime: {
     type: String,
     required: false,
+  },
+  routeType: {
+    type: String,
+    required: true,
+    enum: ["lightly-scheduled", "tightly-scheduled", "normal-scheduled"],
   },
   endTime: {
     type: String,

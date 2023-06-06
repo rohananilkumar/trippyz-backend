@@ -144,7 +144,7 @@ const dayRoute = async (
   placeList,
   restaurantList,
   hotelList,
-  percent = 1
+  durationPerVisit = 60
 ) => {
   const points = [{ place: startPoint }];
   let places = placeList;
@@ -152,7 +152,6 @@ const dayRoute = async (
   let duration = 0;
   let current = startPoint;
   const maxDuration = 11 * 60;
-  const durationPerVisit = 60;
   const startTime = 6 * 60;
   const breakComplete = {
     breakfast: false,
@@ -252,14 +251,18 @@ const filter = (point, placeList) => {
   return placeList.filter((x) => x != point);
 };
 
-const dayRouteRoudTrip = async (startPoint, placeList, restaurantList) => {
+const dayRouteRoudTrip = async (
+  startPoint,
+  placeList,
+  restaurantList,
+  durationPerVisit = 60
+) => {
   const points = [{ place: startPoint }];
   let places = placeList;
   let nearest;
   let duration = 0;
   let current = startPoint;
   const maxDuration = 11 * 60;
-  const durationPerVisit = 60;
   const startTime = 6 * 60;
   const breakComplete = {
     breakfast: false,
@@ -365,7 +368,8 @@ const dayRouteReturnTrip = async (
   startPoint,
   placeList,
   restaurantList,
-  endPoint
+  endPoint,
+  durationPerVisit = 60
 ) => {
   const points = [{ place: startPoint }];
   let places = placeList;
@@ -373,7 +377,6 @@ const dayRouteReturnTrip = async (
   let duration = 0;
   let current = startPoint;
   const maxDuration = 11 * 60;
-  const durationPerVisit = 60;
   const startTime = 6 * 60;
   const breakComplete = {
     breakfast: false,
@@ -522,6 +525,19 @@ const getNearestPlace = async (start, places) => {
   };
 };
 
+const filterPlaces = (places) => {
+  let totalRatings = 0;
+  // array.forEach((element) => {});
+  places.forEach((x) => {
+    console.log(x.user_ratings_total);
+    totalRatings += x.user_ratings_total ? x.user_ratings_total : 0;
+  });
+  const averageRatings = totalRatings / places.length;
+  console.log("average ratings", averageRatings);
+  return places.filter((x) => x.user_ratings_total > averageRatings / 2);
+  // return places;
+};
+
 module.exports = {
   parseDuration,
   filter,
@@ -529,4 +545,5 @@ module.exports = {
   dayRouteRoudTrip,
   dayRoute,
   dayRouteReturnTrip,
+  filterPlaces,
 };

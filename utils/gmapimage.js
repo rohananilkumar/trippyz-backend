@@ -3,6 +3,7 @@ const { googleMapsClient } = require("../startup/gmap");
 
 const querystring = require("querystring");
 const config = require("config");
+const { stat } = require("fs");
 const getGmapImageFromPoints = async (points) => {
   // Get the directions between the points
   const directionsResponse = await googleMapsClient
@@ -28,7 +29,10 @@ const getGmapImageFromPoints = async (points) => {
   )}`;
   console.log(staticMapUrl);
 
-  return staticMapUrl;
+  return {
+    url: staticMapUrl,
+    polyline,
+  };
 };
 
 module.exports = {

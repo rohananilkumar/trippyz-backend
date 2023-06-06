@@ -26,6 +26,7 @@ const {
   dijkstra,
   dayRouteRoudTrip,
   dayRouteReturnTrip,
+  filterPlaces,
 } = require("../utils/algos");
 const { getHotelPrice } = require("../utils/scraping");
 const {
@@ -42,8 +43,14 @@ router.post(
   async (req, res) => {
     const { error, value } = routeRequestJoiSchema.validate(req.body);
     if (error) return res.status(400).send(error);
-    console.log(req.coordinates.start);
-    console.log(req.coordinates.dest);
+
+    const routeType = {
+      ["lightly-scheduled"]: 120,
+      ["tightly-scheduled"]: 60,
+      ["normal-scheduled"]: 90,
+    };
+
+    const userRouteType = routeType[value.routeType];
 
     const route = new RouteRequest({
       ...value,
@@ -53,10 +60,10 @@ router.post(
     });
     // const result = await route.save();
     const radius = value.radius * 1000;
-    const places = await getTouristPlaces(value.dest, radius);
-    let placeNames = places.results.map(
-      (place) => place.name + ", " + value.dest
-    );
+    let places = await getTouristPlaces(value.dest, radius);
+
+    places = filterPlaces(places.results);
+    let placeNames = places.map((place) => place.name + ", " + value.dest);
     const restaurants = await getRestaurants(value.dest, radius);
     let restaurantNames = restaurants.results.map(
       (place) => place.name + ", " + value.dest
@@ -65,7 +72,7 @@ router.post(
     let hotelNames = hotels.results.map(
       (place) => place.name + ", " + value.dest
     );
-    console.log(hotelNames);
+    // console.log(hotelNames);
     // console.log(restaurantNames);
 
     const duration = parseDuration(value.duration);
@@ -78,7 +85,8 @@ router.post(
         let { route, updatedPlaceList, updatedRestaurantList } = await dayRoute(
           value.start,
           placeNames,
-          restaurantNames
+          restaurantNames,
+          userRouteType
         );
         generatedRoute.forEach((x) => route.push({ ...x, day: 0 }));
       } else {
@@ -93,7 +101,8 @@ router.post(
             finalPoint ? finalPoint : value.start,
             placeNames,
             restaurantNames,
-            hotelNames
+            hotelNames,
+            userRouteType
           );
           route.forEach((x) =>
             generatedRoute.push({ ...x, day: value.duration - numberOfDays })
@@ -109,7 +118,8 @@ router.post(
             finalPoint,
             placeNames,
             restaurantNames,
-            value.start
+            value.start,
+            userRouteType
           );
         route.forEach((x) =>
           generatedRoute.push({ ...x, day: value.duration - numberOfDays })
@@ -121,7 +131,13 @@ router.post(
       );
       const pathurl = await getGmapImageFromPoints(coordinates);
       // console.log(route);
-      return res.status(200).send({ generatedRoute, pathurl });
+      return res
+        .status(200)
+        .send({
+          generatedRoute,
+          staticUrl: pathurl.url,
+          polyLine: pathurl.polyline,
+        });
     } catch (e) {
       console.log(e);
     }
