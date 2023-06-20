@@ -16,6 +16,7 @@ const routeRequestJoiSchema = Joi.object({
   routeType: Joi.string()
     .required()
     .valid("lightly-scheduled", "tightly-scheduled", "normal-scheduled"),
+  budgetType: Joi.string().required().valid("expensive", "moderate", "cheap"),
   considerations: Joi.array().items(
     Joi.string().valid("food", "stay", "ticket", "petrol")
   ),
@@ -61,6 +62,11 @@ const routeRequestMongooseSchema = new mongoose.Schema({
   duration: {
     type: Number,
     required: true,
+  },
+  budgetType: {
+    type: String,
+    required: true,
+    enum: ["expensive", "moderate", "cheap"],
   },
   budget: {
     type: Number,

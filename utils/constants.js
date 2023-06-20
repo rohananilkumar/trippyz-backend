@@ -1,0 +1,4 @@
+const DOLLAR_TO_INR = 82;
+const DIESEL_PRICE = 98;
+const PETROL_PRICE = 109;
+module.exports = { DOLLAR_TO_INR, DIESEL_PRICE, PETROL_PRICE };

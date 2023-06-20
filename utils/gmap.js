@@ -1,4 +1,5 @@
 const { googleMapsClient } = require("../startup/gmap");
+const { fetchHotelData } = require("./hotels");
 
 async function getCoordinates(area) {
   const response = await googleMapsClient
@@ -25,17 +26,36 @@ async function getCoordinatesList(areas) {
 }
 
 async function getHotels(area, radius) {
+  const priceData = await fetchHotelData(area);
+  console.log("price data fetched");
+  const hotels = [];
   const coordinates = await getCoordinatesString(area);
   const type = "lodging";
   try {
-    const tourismResponse = await googleMapsClient
-      .placesNearby({ location: coordinates, radius, type })
-      .asPromise();
-
-    return tourismResponse.json;
-  } catch (e) {
-    console.log(e);
+    for (x of priceData) {
+      // console.log("checking " + x.HotelName);
+      const tourismResponse = await googleMapsClient
+        .places({ query: x.HotelName })
+        .asPromise();
+      // console.log({ gmap: tourismResponse.json.results[0], price: x });
+      hotels.push({ gmap: tourismResponse.json.results[0], price: x });
+    }
+  } catch (ex) {
+    console.log(ex);
   }
+  // console.log("test", hotels);
+
+  return hotels;
+
+  // try {
+  //   const tourismResponse = await googleMapsClient
+  //     .placesNearby({ location: coordinates, radius, type })
+  //     .asPromise();
+
+  //   return tourismResponse.json;
+  // } catch (e) {
+  //   console.log(e);
+  // }
 }
 
 async function getRestaurants(area, radius) {

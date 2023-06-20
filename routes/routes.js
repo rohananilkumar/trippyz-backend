@@ -27,6 +27,7 @@ const {
   dayRouteRoudTrip,
   dayRouteReturnTrip,
   filterPlaces,
+  filterHotels,
 } = require("../utils/algos");
 const { getHotelPrice } = require("../utils/scraping");
 const {
@@ -36,6 +37,7 @@ const {
   dayRoute,
 } = require("../utils/algos");
 const { getGmapImageFromPoints } = require("../utils/gmapimage");
+const { fetchData } = require("../utils/hotels");
 
 router.post(
   "/get-route",
@@ -68,16 +70,24 @@ router.post(
     let restaurantNames = restaurants.results.map(
       (place) => place.name + ", " + value.dest
     );
-    const hotels = await getHotels(value.dest, radius);
-    let hotelNames = hotels.results.map(
-      (place) => place.name + ", " + value.dest
-    );
+
+    let hotels = await getHotels(value.dest, radius);
+    console.log("hotels", hotels);
+    // console.log("expensive", filterHotels(hotels, "expensive").length);
+    // console.log("moderate", filterHotels(hotels, "moderate").length);
+    // console.log("cheap", filterHotels(hotels, "cheap").length);
+    hotels = filterHotels(hotels, value.budgetType);
+
+    // console.log(hotels);
+    // let hotelNames = hotels.map((place) => place.name + ", " + value.dest);
     // console.log(hotelNames);
     // console.log(restaurantNames);
 
     const duration = parseDuration(value.duration);
     console.log(duration);
     let numberOfDays = value.duration;
+    let fuelPriceTotal = 0;
+    let hotelPriceTotal = 0;
 
     try {
       let generatedRoute = [];
@@ -97,30 +107,43 @@ router.post(
             updatedPlaceList,
             updatedRestaurantList,
             updatedHotelList,
+            fuelPrice,
+            hotelPrice,
           } = await dayRoute(
             finalPoint ? finalPoint : value.start,
             placeNames,
             restaurantNames,
-            hotelNames,
+            hotels,
+            value.mileage,
             userRouteType
           );
+          fuelPriceTotal += fuelPrice;
+          hotelPriceTotal += hotelPrice;
           route.forEach((x) =>
             generatedRoute.push({ ...x, day: value.duration - numberOfDays })
           );
           placeNames = updatedPlaceList;
           restaurantNames = updatedRestaurantList;
-          hotelNames = updatedHotelList;
+          hotels = updatedHotelList;
           finalPoint = generatedRoute[generatedRoute.length - 1].place;
           numberOfDays -= 1;
         }
-        let { route, updatedPlaceList, updatedRestaurantList } =
-          await dayRouteReturnTrip(
-            finalPoint,
-            placeNames,
-            restaurantNames,
-            value.start,
-            userRouteType
-          );
+        let {
+          route,
+          updatedPlaceList,
+          updatedRestaurantList,
+          hotelPrice,
+          fuelPrice,
+        } = await dayRouteReturnTrip(
+          finalPoint,
+          placeNames,
+          restaurantNames,
+          value.start,
+          value.mileage,
+          userRouteType
+        );
+        fuelPriceTotal += fuelPrice;
+        hotelPriceTotal += hotelPrice;
         route.forEach((x) =>
           generatedRoute.push({ ...x, day: value.duration - numberOfDays })
         );
@@ -136,6 +159,10 @@ router.post(
         staticUrl: pathurl.url,
         polyLine: pathurl.polyline,
         coordinates: coordinates,
+        budget: {
+          fuelPriceTotal,
+          hotelPriceTotal,
+        },
       });
     } catch (e) {
       console.log(e);
@@ -190,9 +217,9 @@ router.get("/place-details/:place", auth, async (req, res) => {
 router.get("/get-price/:hotel", [auth], async (req, res) => {
   const hotel = req.params.hotel;
 
-  getHotelPrice(hotel);
+  const data = await fetchData(hotel);
 
-  return res.status(200).send({});
+  return res.status(200).send({ data });
 });
 
 router.get("/", auth, async (req, res) => {});
