@@ -24,10 +24,10 @@ const {
 const { googleMapsClient } = require("../startup/gmap");
 const {
   dijkstra,
-  dayRouteRoudTrip,
   dayRouteReturnTrip,
   filterPlaces,
   filterHotels,
+  dayRouteRoundTrip,
 } = require("../utils/algos");
 const { getHotelPrice } = require("../utils/scraping");
 const {
@@ -92,13 +92,24 @@ router.post(
     try {
       let generatedRoute = [];
       if (numberOfDays == 1) {
-        let { route, updatedPlaceList, updatedRestaurantList } = await dayRoute(
+        let {
+          route,
+          updatedPlaceList,
+          updatedRestaurantList,
+          fuelPrice,
+          hotelPrice,
+        } = await dayRouteRoundTrip(
           value.start,
           placeNames,
           restaurantNames,
-          userRouteType
+          value.mileage,
+          userRouteType,
+          value.peopleCount,
+          value.vehicleType
         );
-        generatedRoute.forEach((x) => route.push({ ...x, day: 0 }));
+        route.forEach((x) => generatedRoute.push({ ...x, day: 0 }));
+        fuelPriceTotal += fuelPrice;
+        hotelPriceTotal += hotelPrice;
       } else {
         let finalPoint;
         while (numberOfDays > 1) {
@@ -115,7 +126,9 @@ router.post(
             restaurantNames,
             hotels,
             value.mileage,
-            userRouteType
+            userRouteType,
+            value.peopleCount,
+            value.vehicleType
           );
           fuelPriceTotal += fuelPrice;
           hotelPriceTotal += hotelPrice;
@@ -140,7 +153,9 @@ router.post(
           restaurantNames,
           value.start,
           value.mileage,
-          userRouteType
+          userRouteType,
+          value.peopleCount,
+          value.vehicleType
         );
         fuelPriceTotal += fuelPrice;
         hotelPriceTotal += hotelPrice;
@@ -152,6 +167,7 @@ router.post(
       const coordinates = await getCoordinatesList(
         generatedRoute.map((r) => r.place)
       );
+      console.log(coordinates, generatedRoute);
       const pathurl = await getGmapImageFromPoints(coordinates);
       // console.log(route);
       return res.status(200).send({

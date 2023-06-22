@@ -11,18 +11,14 @@ const routeRequestJoiSchema = Joi.object({
   endTime: Joi.date(),
   duration: Joi.number(),
   radius: Joi.number().required(),
-  budget: Joi.number().required(),
   peopleCount: Joi.number().required().min(1),
   routeType: Joi.string()
     .required()
     .valid("lightly-scheduled", "tightly-scheduled", "normal-scheduled"),
   budgetType: Joi.string().required().valid("expensive", "moderate", "cheap"),
-  considerations: Joi.array().items(
-    Joi.string().valid("food", "stay", "ticket", "petrol")
-  ),
   mileage: Joi.number(),
-  roomForError: Joi.number().min(10).max(90).required(),
   restaurantRatingPreference: Joi.number().min(0).max(5),
+  vehicleType: Joi.string().valid("petrol", "diesel"),
 });
 
 const routeRequestMongooseSchema = new mongoose.Schema({
@@ -68,28 +64,13 @@ const routeRequestMongooseSchema = new mongoose.Schema({
     required: true,
     enum: ["expensive", "moderate", "cheap"],
   },
-  budget: {
-    type: Number,
-    required: true,
-  },
   peopleCount: {
     type: Number,
     required: true,
   },
-  considerations: [
-    {
-      type: String,
-      required: true,
-      enum: ["food", "stay", "ticket", "petrol"],
-    },
-  ],
   mileage: {
     type: Number,
     required: false,
-  },
-  roomForError: {
-    type: Number,
-    required: true,
   },
   restaurantRatingPreference: {
     type: Number,
@@ -98,6 +79,10 @@ const routeRequestMongooseSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
+  },
+  vehicleType: {
+    type: String,
+    enum: ["petrol", "diesel"],
   },
 });
 

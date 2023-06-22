@@ -1,5 +1,5 @@
 const { googleMapsClient } = require("../startup/gmap");
-const { DOLLAR_TO_INR, DIESEL_PRICE } = require("./constants");
+const { DOLLAR_TO_INR, DIESEL_PRICE, PETROL_PRICE } = require("./constants");
 
 const breaks = {
   breakfast: 8 * 60,
@@ -19,6 +19,7 @@ const findNewPoint = async ({
   startTime,
   durationPerVisit,
   mileage,
+  vehicleType,
 }) => {
   const nearest = await getNearestPlace(current, places);
   const newPlaces = filter(nearest.place, places);
@@ -28,7 +29,7 @@ const findNewPoint = async ({
     hours: roundTime((duration + startTime + nearest.duration / 60) / 60),
     mins: roundTime((duration + startTime + nearest.duration / 60) % 60),
     break: undefined,
-    distancePrice: calculateMileage(nearest.distance, mileage),
+    distancePrice: calculateMileage(nearest.distance, mileage, vehicleType),
   });
   console.log("pushing ", nearest.place);
   // current = nearest.place;
@@ -36,7 +37,7 @@ const findNewPoint = async ({
     duration: duration + nearest.duration / 60 + durationPerVisit,
     nearest: nearest.place,
     places: newPlaces,
-    distancePrice: calculateMileage(nearest.distance, mileage),
+    distancePrice: calculateMileage(nearest.distance, mileage, vehicleType),
   };
 };
 
@@ -50,6 +51,7 @@ const findNewPointAndReturn = async ({
   durationPerVisit,
   returnToDest = false,
   mileage,
+  vehicleType,
 }) => {
   if (returnToDest) {
     const returnData = await getDistanceBetweenTwoPoints(current, returnDest);
@@ -63,17 +65,25 @@ const findNewPointAndReturn = async ({
         (duration + startTime + returnData.duration.value / 60) % 60
       ),
       break: undefined,
-      distancePrice: calculateMileage(returnData.distance.value, mileage),
+      distancePrice: calculateMileage(
+        returnData.distance.value,
+        mileage,
+        vehicleType
+      ),
       returnData,
     });
     console.log(
-      calculateMileage(returnData.distance.value, mileage),
+      calculateMileage(returnData.distance.value, mileage, vehicleType),
       returnData.distance.value,
       mileage,
       "distace data"
     );
     return {
-      distancePrice: calculateMileage(returnData.distance.value, mileage),
+      distancePrice: calculateMileage(
+        returnData.distance.value,
+        mileage,
+        vehicleType
+      ),
     };
   }
 
@@ -85,7 +95,7 @@ const findNewPointAndReturn = async ({
     hours: roundTime((duration + startTime + nearest.duration / 60) / 60),
     mins: roundTime((duration + startTime + nearest.duration / 60) % 60),
     break: undefined,
-    distancePrice: calculateMileage(nearest.distance, mileage),
+    distancePrice: calculateMileage(nearest.distance, mileage, vehicleType),
   });
   console.log("pushing ", nearest.place);
   const returnData = await getDistanceBetweenTwoPoints(
@@ -98,7 +108,7 @@ const findNewPointAndReturn = async ({
     distanceBack: returnData.distance.value,
     duration: duration + nearest.duration / 60 + durationPerVisit,
     nearest: nearest.place,
-    distancePrice: calculateMileage(nearest.distance, mileage),
+    distancePrice: calculateMileage(nearest.distance, mileage, vehicleType),
     places: newPlaces,
   };
 };
@@ -112,6 +122,7 @@ const findNewRestaurant = async ({
   durationPerVisit,
   breakType,
   mileage,
+  vehicleType,
 }) => {
   console.log("Finding new restaurant");
   const nearest = await getNearestPlace(current, restaurants);
@@ -122,7 +133,7 @@ const findNewRestaurant = async ({
     hours: roundTime((duration + startTime) / 60),
     mins: roundTime((duration + startTime) % 60),
     break: breakType,
-    distancePrice: calculateMileage(nearest.distance, mileage),
+    distancePrice: calculateMileage(nearest.distance, mileage, vehicleType),
   });
   console.log(breakType, " at ", nearest.place);
   // current = nearest.place;
@@ -130,7 +141,7 @@ const findNewRestaurant = async ({
     duration: duration + nearest.duration / 60 + durationPerVisit,
     nearest: nearest.place,
     places: newRestaurants,
-    distancePrice: calculateMileage(nearest.distance, mileage),
+    distancePrice: calculateMileage(nearest.distance, mileage, vehicleType),
   };
 };
 
@@ -142,6 +153,8 @@ const findNewHotel = async ({
   startTime,
   breakType,
   mileage,
+  peopleCount,
+  vehicleType,
 }) => {
   // console.log("Finding new hotel", hotels, current);
   console.log("hotels", hotels);
@@ -153,6 +166,9 @@ const findNewHotel = async ({
   const priceDetails = hotels.find(
     (x) => x.price.HotelName == nearest.place
   ).price;
+  const price =
+    (peopleCount / 2) * priceDetails.price +
+    (peopleCount % 2) * priceDetails.price;
   const newHotels = filter(nearest.place, hotels);
   points.push({
     place: nearest.place,
@@ -160,8 +176,8 @@ const findNewHotel = async ({
     hours: roundTime((duration + startTime) / 60),
     mins: roundTime((duration + startTime) % 60),
     break: breakType,
-    hotelPrice: priceDetails.price * DOLLAR_TO_INR,
-    distancePrice: calculateMileage(nearest.distance, mileage),
+    hotelPrice: price * DOLLAR_TO_INR,
+    distancePrice: calculateMileage(nearest.distance, mileage, vehicleType),
   });
   console.log(breakType, " at ", nearest.place);
 
@@ -169,9 +185,9 @@ const findNewHotel = async ({
   return {
     duration: "overnight",
     nearest: nearest.place,
-    hotelPrice: priceDetails.price * DOLLAR_TO_INR,
+    hotelPrice: price * DOLLAR_TO_INR,
     places: newHotels,
-    distancePrice: calculateMileage(nearest.distance, mileage),
+    distancePrice: calculateMileage(nearest.distance, mileage, vehicleType),
   };
 };
 
@@ -181,8 +197,12 @@ const roundTime = (value) => {
 const roundMoney = (value) => {
   return parseInt(value.toFixed(2));
 };
-const calculateMileage = (distance, mileage) => {
-  return roundMoney((distance / 1000 / mileage) * DIESEL_PRICE);
+const calculateMileage = (distance, mileage, vehicleType) => {
+  return roundMoney(
+    (distance / 1000 / mileage) * vehicleType === "petrol"
+      ? PETROL_PRICE
+      : DIESEL_PRICE
+  );
 };
 
 const dayRoute = async (
@@ -191,7 +211,9 @@ const dayRoute = async (
   restaurantList,
   hotelList,
   mileage,
-  durationPerVisit = 60
+  durationPerVisit = 60,
+  peopleCount = 1,
+  vehicleType = "petrol"
 ) => {
   console.log("from day route", hotelList);
   const points = [{ place: startPoint }];
@@ -220,6 +242,7 @@ const dayRoute = async (
         startTime,
         durationPerVisit,
         mileage,
+        vehicleType,
         breakType: "breakfast",
       });
 
@@ -237,6 +260,7 @@ const dayRoute = async (
         startTime,
         mileage,
         durationPerVisit,
+        vehicleType,
         breakType: "lunch",
       });
 
@@ -254,6 +278,7 @@ const dayRoute = async (
         startTime,
         durationPerVisit,
         mileage,
+        vehicleType,
         breakType: "dinner",
       });
 
@@ -270,6 +295,7 @@ const dayRoute = async (
         duration,
         startTime,
         durationPerVisit,
+        vehicleType,
         mileage,
       });
 
@@ -292,13 +318,16 @@ const dayRoute = async (
     startTime,
     breakType: "stay",
     mileage,
+    peopleCount,
   });
 
   duration = stay.duration;
   current = stay.nearest;
   hotelList = stay.places;
   fuelPrice += stay.distancePrice;
-  hotelPrice += stay.hotelPrice;
+
+  hotelPrice +=
+    (peopleCount / 2) * stay.hotelPrice + (peopleCount % 2) * stay.hotelPrice;
 
   return {
     route: points,
@@ -314,11 +343,15 @@ const filter = (point, placeList) => {
   return placeList.filter((x) => x != point);
 };
 
-const dayRouteRoudTrip = async (
+const dayRouteRoundTrip = async (
   startPoint,
   placeList,
   restaurantList,
-  durationPerVisit = 60
+  mileage,
+
+  durationPerVisit = 60,
+  peopleCount = 1,
+  vehicleType = "petrol"
 ) => {
   const points = [{ place: startPoint }];
   let places = placeList;
@@ -333,12 +366,16 @@ const dayRouteRoudTrip = async (
     dinner: false,
   };
   let durationback = 0;
+  let fuelPrice = 0;
+  let hotelPrice = 0;
 
   while (
     duration < maxDuration &&
     duration + durationback < maxDuration &&
     places.length > 0
   ) {
+    console.log(fuelPrice, "fuelPrice");
+
     // console.log(current, nearest, places, duration);
     if (duration + startTime > breaks.breakfast && !breakComplete.breakfast) {
       const newPoint = await findNewRestaurant({
@@ -347,14 +384,18 @@ const dayRouteRoudTrip = async (
         points,
         duration,
         startTime,
+        mileage,
         durationPerVisit,
         breakType: "breakfast",
+        vehicleType,
       });
 
       duration = newPoint.duration;
       current = newPoint.nearest;
       restaurantList = newPoint.places;
+      fuelPrice += newPoint.distancePrice;
       breakComplete.breakfast = true;
+      console.log("finding restaurant for breakfast");
     } else if (duration + startTime > breaks.lunch && !breakComplete.lunch) {
       const newPoint = await findNewRestaurant({
         current,
@@ -364,11 +405,16 @@ const dayRouteRoudTrip = async (
         startTime,
         durationPerVisit,
         breakType: "lunch",
+        mileage,
+        vehicleType,
       });
 
       duration = newPoint.duration;
       current = newPoint.nearest;
       restaurantList = newPoint.places;
+      fuelPrice += newPoint.distancePrice;
+      console.log("finding restaurant for lunch");
+
       breakComplete.lunch = true;
     } else if (duration + startTime > breaks.dinner && !breakComplete.dinner) {
       const newPoint = await findNewRestaurant({
@@ -378,12 +424,17 @@ const dayRouteRoudTrip = async (
         duration,
         startTime,
         durationPerVisit,
+        mileage,
         breakType: "dinner",
+        vehicleType,
       });
 
       duration = newPoint.duration;
       current = newPoint.nearest;
       restaurantList = newPoint.places;
+      fuelPrice += newPoint.distancePrice;
+      console.log("finding restaurant for dinner");
+
       breakComplete.dinner = true;
     } else {
       const newPoint = await findNewPointAndReturn({
@@ -395,6 +446,7 @@ const dayRouteRoudTrip = async (
         durationPerVisit,
         mileage,
         returnDest: startPoint,
+        vehicleType,
       });
 
       // console.log(newPoint);
@@ -402,6 +454,8 @@ const dayRouteRoudTrip = async (
       duration = newPoint.duration;
       current = newPoint.nearest;
       places = newPoint.places;
+      fuelPrice += newPoint.distancePrice;
+      console.log("finding new place", newPoint.distancePrice);
       console.log("from back duration", newPoint.durationBack);
       console.log("startpoint", startPoint);
       durationBack = newPoint.durationBack;
@@ -420,12 +474,15 @@ const dayRouteRoudTrip = async (
     durationPerVisit,
     returnDest: startPoint,
     returnToDest: true,
+    vehicleType,
   });
 
   return {
     route: points,
     updatedPlaceList: places,
     updatedRestaurantList: restaurantList,
+    fuelPrice,
+    hotelPrice,
   };
 };
 
@@ -435,7 +492,9 @@ const dayRouteReturnTrip = async (
   restaurantList,
   endPoint,
   mileage,
-  durationPerVisit = 60
+  durationPerVisit = 60,
+  peopleCount = 1,
+  vehicleType = "petrol"
 ) => {
   const points = [{ place: startPoint }];
   let places = placeList;
@@ -469,6 +528,7 @@ const dayRouteReturnTrip = async (
         durationPerVisit,
         mileage,
         breakType: "breakfast",
+        vehicleType,
       });
 
       duration = newPoint.duration;
@@ -486,6 +546,7 @@ const dayRouteReturnTrip = async (
         durationPerVisit,
         mileage,
         breakType: "lunch",
+        vehicleType,
       });
 
       duration = newPoint.duration;
@@ -504,6 +565,7 @@ const dayRouteReturnTrip = async (
         durationPerVisit,
         mileage,
         breakType: "dinner",
+        vehicleType,
       });
 
       duration = newPoint.duration;
@@ -521,6 +583,7 @@ const dayRouteReturnTrip = async (
         durationPerVisit,
         mileage,
         returnDest: endPoint,
+        vehicleType,
       });
 
       // console.log(newPoint);
@@ -547,6 +610,7 @@ const dayRouteReturnTrip = async (
     returnDest: endPoint,
     mileage,
     returnToDest: true,
+    vehicleType,
   });
   fuelPrice += newPoint.distancePrice;
 
@@ -686,7 +750,7 @@ module.exports = {
   parseDuration,
   filter,
   getNearestPlace,
-  dayRouteRoudTrip,
+  dayRouteRoundTrip,
   dayRoute,
   dayRouteReturnTrip,
   filterPlaces,
